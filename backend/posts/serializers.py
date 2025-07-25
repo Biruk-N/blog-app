@@ -89,9 +89,9 @@ class PostDetailSerializer(serializers.ModelSerializer):
 
 class PostCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating posts"""
-    category_id = serializers.IntegerField(required=False, allow_null=True)
+    category_id = serializers.UUIDField(required=False, allow_null=True)
     tag_ids = serializers.ListField(
-        child=serializers.IntegerField(),
+        child=serializers.UUIDField(),
         required=False,
         default=list
     )
@@ -132,9 +132,9 @@ class PostCreateSerializer(serializers.ModelSerializer):
 
 class PostUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating posts"""
-    category_id = serializers.IntegerField(required=False, allow_null=True)
+    category_id = serializers.UUIDField(required=False, allow_null=True)
     tag_ids = serializers.ListField(
-        child=serializers.IntegerField(),
+        child=serializers.UUIDField(),
         required=False
     )
     

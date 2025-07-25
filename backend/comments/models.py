@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from posts.models import Post
+import uuid
 
 User = get_user_model()
 
@@ -13,6 +14,9 @@ class Comment(models.Model):
         ('rejected', _('Rejected')),
         ('spam', _('Spam')),
     ]
+    
+    # Primary key
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Basic fields
     content = models.TextField()

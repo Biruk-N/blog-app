@@ -3,11 +3,13 @@ from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+import uuid
 
 User = get_user_model()
 
 class Category(models.Model):
     """Category model for organizing posts"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=100, unique=True)
     description = models.TextField(blank=True)
@@ -28,6 +30,7 @@ class Category(models.Model):
 
 class Tag(models.Model):
     """Tag model for post tagging"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(max_length=50, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -50,6 +53,9 @@ class Post(models.Model):
         ('published', _('Published')),
         ('archived', _('Archived')),
     ]
+    
+    # Primary key
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Basic fields
     title = models.CharField(max_length=255)

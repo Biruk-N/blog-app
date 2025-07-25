@@ -66,11 +66,21 @@ class CommentDetailSerializer(serializers.ModelSerializer):
 
 class CommentCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating comments"""
-    parent_id = serializers.IntegerField(required=False, allow_null=True)
+    post_id = serializers.UUIDField(required=True)
+    parent_id = serializers.UUIDField(required=False, allow_null=True)
     
     class Meta:
         model = Comment
-        fields = ['content', 'parent_id']
+        fields = ['content', 'post_id', 'parent_id']
+    
+    def validate_post_id(self, value):
+        """Validate post exists"""
+        from posts.models import Post
+        try:
+            Post.objects.get(id=value)
+        except Post.DoesNotExist:
+            raise serializers.ValidationError("Post does not exist")
+        return value
     
     def validate_parent_id(self, value):
         """Validate parent comment exists and belongs to same post"""
@@ -86,15 +96,18 @@ class CommentCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         parent_id = validated_data.pop('parent_id', None)
+        post_id = validated_data.pop('post_id')
         
         # Set the author
         validated_data['author'] = self.context['request'].user
         
-        # Set the post from context
-        post = self.context.get('post')
-        if not post:
-            raise serializers.ValidationError("Post context is required")
-        validated_data['post'] = post
+        # Get the post
+        from posts.models import Post
+        try:
+            post = Post.objects.get(id=post_id)
+            validated_data['post'] = post
+        except Post.DoesNotExist:
+            raise serializers.ValidationError("Post does not exist")
         
         # Set parent if provided
         if parent_id:

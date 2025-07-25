@@ -1,9 +1,13 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+import uuid
 
 class CustomUser(AbstractUser):
     """Custom user model with additional fields for the blog platform"""
+    
+    # Primary key
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Additional fields
     avatar = models.ImageField(
@@ -34,6 +38,17 @@ class CustomUser(AbstractUser):
     is_verified = models.BooleanField(
         default=False,
         help_text=_('Whether the user account is verified')
+    )
+    email_verification_token = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text=_('Token for email verification')
+    )
+    email_verification_sent_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text=_('When email verification was sent')
     )
     
     # Override email field to make it unique
