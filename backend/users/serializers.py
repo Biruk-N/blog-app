@@ -38,24 +38,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for user profile display"""
-    full_name = serializers.SerializerMethodField()
-    post_count = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'full_name', 'bio', 'avatar', 'website', 'location',
-            'date_of_birth', 'is_verified', 'date_joined',
-            'last_login', 'post_count'
+            'bio', 'avatar', 'website', 'location', 'date_of_birth',
+            'is_verified', 'date_joined', 'last_login'
         ]
-        read_only_fields = ['id', 'date_joined', 'last_login', 'is_verified']
-    
-    def get_full_name(self, obj):
-        return obj.get_full_name()
-    
-    def get_post_count(self, obj):
-        return obj.posts.count()
+        read_only_fields = ['id', 'date_joined', 'last_login']
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating user profile"""
@@ -66,23 +57,25 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'bio', 'avatar',
             'website', 'location', 'date_of_birth'
         ]
-    
-    def update(self, instance, validated_data):
-        # Handle avatar upload
-        if 'avatar' in validated_data:
-            # Delete old avatar if it exists
-            if instance.avatar:
-                instance.avatar.delete(save=False)
-        
-        return super().update(instance, validated_data)
 
 class UserListSerializer(serializers.ModelSerializer):
     """Serializer for listing users (minimal info)"""
-    full_name = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'full_name', 'avatar', 'bio', 'is_verified']
+        fields = ['id', 'username', 'first_name', 'last_name', 'avatar', 'is_verified']
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for password reset request"""
+    email = serializers.EmailField()
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer for password reset confirmation"""
+    token = serializers.CharField()
+    new_password = serializers.CharField(validators=[validate_password])
+    new_password2 = serializers.CharField()
     
-    def get_full_name(self, obj):
-        return obj.get_full_name() 
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['new_password2']:
+            raise serializers.ValidationError({"new_password": "Password fields didn't match."})
+        return attrs 

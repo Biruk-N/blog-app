@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from posts.models import Post
+import uuid
 
 User = get_user_model()
 
@@ -29,6 +30,9 @@ class Reaction(models.Model):
         ('thumbs_down', '👎'),
         ('check', '✅'),
     ]
+    
+    # Primary key
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Relationships
     post = models.ForeignKey(

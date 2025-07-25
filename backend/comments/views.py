@@ -85,17 +85,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         return CommentListSerializer
     
     def get_serializer_context(self):
-        """Add post context for comment creation"""
+        """Add context for serializers"""
         context = super().get_serializer_context()
-        if self.action == 'create':
-            # Get post from URL parameter or request data
-            post_id = self.request.data.get('post_id') or self.kwargs.get('post_pk')
-            if post_id:
-                from posts.models import Post
-                try:
-                    context['post'] = Post.objects.get(id=post_id)
-                except Post.DoesNotExist:
-                    pass
         return context
     
     def perform_create(self, serializer):
