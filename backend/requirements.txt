@@ -1,7 +1,10 @@
 django>=4.2
 djangorestframework>=3.14
-corsheaders>=4.0
+djangorestframework-simplejwt>=5.3
+django-cors-headers>=4.0
 django-filter>=23.0
 Pillow>=10.0
 psycopg2-binary>=2.9
 python-decouple>=3.8
+gunicorn>=21.0
+whitenoise>=6.5
