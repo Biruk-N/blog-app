@@ -1,4 +1,4 @@
-# Backend Deployment Guide - Blog App API to Render
+# Backend Deployment Guide - DevLogg API to Render
 
 ## 🚀 Quick Deploy with render.yaml
 
@@ -25,7 +25,7 @@
 1. Click "New" → "Web Service"
 2. Connect your GitHub repository (select the backend folder)
 3. Configure:
-   - **Name**: `blog-app-backend`
+   - **Name**: `blog-app-api`
    - **Environment**: `Docker`
    - **Dockerfile Path**: `./Dockerfile`
    - **Docker Context**: `.`
@@ -58,7 +58,7 @@ ALLOWED_HOSTS=.onrender.com
 - `DB_PORT`: PostgreSQL port (usually 5432)
 
 ### Optional Variables:
-- `CORS_ALLOWED_ORIGINS`: Comma-separated list of allowed origins
+- `CORS_ALLOWED_ORIGINS`: Comma-separated list of allowed origins (for frontend)
 - `ALLOWED_HOSTS`: Comma-separated list of allowed hosts
 - `EMAIL_HOST`: SMTP host for email functionality
 - `EMAIL_PORT`: SMTP port
@@ -106,6 +106,12 @@ POST https://your-app-name.onrender.com/api/users/
 ### Health Check
 ```
 GET https://your-app-name.onrender.com/api/users/
+```
+
+### Frontend Integration
+Once deployed, your frontend can connect to the API using:
+```env
+NEXT_PUBLIC_API_BASE_URL=https://your-app-name.onrender.com/api
 ```
 
 ## 🐛 Troubleshooting
