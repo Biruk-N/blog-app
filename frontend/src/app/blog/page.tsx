@@ -146,11 +146,11 @@ export default function BlogPage() {
                   <div className="flex items-center space-x-4 text-sm text-gray-500">
                     <div className="flex items-center">
                       <Clock className="w-4 h-4 mr-1" />
-                      {post.read_time} min read
+                      {post.reading_time || post.read_time || 1} min read
                     </div>
                     <div className="flex items-center">
                       <Eye className="w-4 h-4 mr-1" />
-                      {post.view_count} views
+                      {post.view_count || 0} views
                     </div>
                   </div>
                   <Link
@@ -187,11 +187,11 @@ export default function BlogPage() {
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 mr-1" />
-                    {post.read_time} min read
+                    {post.reading_time || post.read_time || 1} min read
                   </div>
                   <div className="flex items-center">
                     <Eye className="w-4 h-4 mr-1" />
-                    {post.view_count} views
+                    {post.view_count || 0} views
                   </div>
                 </div>
                 <Link

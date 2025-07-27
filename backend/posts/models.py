@@ -65,8 +65,19 @@ class PostView(models.Model):
             models.Index(fields=['user', 'viewed_at']),
             models.Index(fields=['session_key', 'viewed_at']),
         ]
-        # Prevent duplicate views from same user/session within 24 hours
-        unique_together = [['post', 'session_key'], ['post', 'user']]
+        # Prevent duplicate views from same user/session
+        constraints = [
+            models.UniqueConstraint(
+                fields=['post', 'user'],
+                condition=models.Q(user__isnull=False),
+                name='unique_post_user_view'
+            ),
+            models.UniqueConstraint(
+                fields=['post', 'session_key'],
+                condition=models.Q(session_key__isnull=False),
+                name='unique_post_session_view'
+            ),
+        ]
     
     def __str__(self):
         return f"View of {self.post.title} at {self.viewed_at}"
@@ -186,25 +197,41 @@ class Post(models.Model):
         try:
             # Get user and session info
             user = request.user if request.user.is_authenticated else None
-            session_key = request.session.session_key
+            session_key = request.session.session_key if hasattr(request, 'session') else None
             ip_address = self._get_client_ip(request)
             user_agent = request.META.get('HTTP_USER_AGENT', '')
             
-            # Create view record
-            PostView.objects.create(
-                post=self,
-                user=user,
-                session_key=session_key,
-                ip_address=ip_address,
-                user_agent=user_agent
-            )
+            # Check if view already exists for this user/session
+            existing_view = None
+            if user:
+                existing_view = PostView.objects.filter(post=self, user=user).first()
+            elif session_key:
+                existing_view = PostView.objects.filter(post=self, session_key=session_key).first()
             
-            # Increment view count
-            self.increment_view_count()
+            # Only create new view if it doesn't exist
+            if not existing_view:
+                PostView.objects.create(
+                    post=self,
+                    user=user,
+                    session_key=session_key,
+                    ip_address=ip_address,
+                    user_agent=user_agent
+                )
+                
+                # Increment view count
+                self.increment_view_count()
+                print(f"View recorded for post {self.id}: {self.view_count} total views")
+            else:
+                print(f"View already exists for post {self.id}")
             
         except Exception as e:
             # Log error but don't break the request
-            print(f"Error recording view: {e}")
+            print(f"Error recording view for post {self.id}: {e}")
+            # Still increment view count even if detailed tracking fails
+            try:
+                self.increment_view_count()
+            except:
+                pass
     
     def _get_client_ip(self, request):
         """Get client IP address from request"""

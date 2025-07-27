@@ -110,6 +110,28 @@ class PostViewSet(viewsets.ModelViewSet):
         })
     
     @action(detail=True, methods=['get'])
+    def debug_views(self, request, pk=None):
+        """Debug endpoint to check view recording"""
+        post = self.get_object()
+        views = post.views.all()
+        return Response({
+            'post_id': str(post.id),
+            'post_title': post.title,
+            'view_count': post.view_count,
+            'total_views_recorded': views.count(),
+            'views': [
+                {
+                    'id': str(view.id),
+                    'user': view.user.username if view.user else 'Anonymous',
+                    'session_key': view.session_key,
+                    'ip_address': view.ip_address,
+                    'viewed_at': view.viewed_at
+                }
+                for view in views[:10]  # Show first 10 views
+            ]
+        })
+    
+    @action(detail=True, methods=['get'])
     def analytics(self, request, pk=None):
         """Get analytics data for a post"""
         post = self.get_object()

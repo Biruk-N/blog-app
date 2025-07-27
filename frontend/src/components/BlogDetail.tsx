@@ -18,7 +18,7 @@ import {
   ArrowLeft
 } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import CommentItem from './CommentItem'
 
@@ -38,6 +38,20 @@ export default function BlogDetail({ id }: BlogDetailProps) {
     },
     enabled: !!id,
   })
+
+  // Increment view count when post is loaded
+  useEffect(() => {
+    if (post?.id && post?.status === 'published') {
+      const incrementView = async () => {
+        try {
+          await api.post(`/posts/${id}/increment_view/`)
+        } catch (error) {
+          console.error('Error incrementing view:', error)
+        }
+      }
+      incrementView()
+    }
+  }, [post?.id, post?.status, id])
 
   const { data: comments, refetch: refetchComments } = useQuery<Comment[]>({
     queryKey: ['comments', id],

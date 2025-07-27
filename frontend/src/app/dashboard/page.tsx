@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Edit, Eye, Trash2, Calendar, User, BarChart3, FileText } from 'lucide-react'
 import Link from 'next/link'
 import api from '@/lib/api'
@@ -12,9 +12,11 @@ import toast from 'react-hot-toast'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const [isClient, setIsClient] = useState(false)
 
   // Check authentication on mount
   useEffect(() => {
+    setIsClient(true)
     if (!isAuthenticated()) {
       router.push('/login')
       toast.error('Please login to access the dashboard')
@@ -33,8 +35,8 @@ export default function DashboardPage() {
   const { data: posts, isLoading: postsLoading } = useQuery<Post[]>({
     queryKey: ['user-posts'],
     queryFn: async () => {
-      const response = await api.get('/posts/')
-      return response.data.results || response.data
+      const response = await api.get('/posts/my_posts/')
+      return response.data.results || response.data || []
     },
     enabled: isAuthenticated(),
   })
@@ -42,21 +44,60 @@ export default function DashboardPage() {
   const { data: stats } = useQuery({
     queryKey: ['user-stats'],
     queryFn: async () => {
-      const [postsRes, commentsRes] = await Promise.all([
-        api.get('/posts/my-posts/'),
-        api.get('/comments/my-comments/')
-      ])
-      return {
-        totalPosts: postsRes.data.count || postsRes.data.length || 0,
-        publishedPosts: (postsRes.data.results || postsRes.data).filter((post: Post) => post.status === 'published').length,
-        totalComments: commentsRes.data.count || commentsRes.data.length || 0,
+      try {
+        const [postsRes, commentsRes] = await Promise.all([
+          api.get('/posts/my_posts/'),
+          api.get('/comments/my_comments/')
+        ])
+        
+        const postsData = postsRes.data.results || postsRes.data || []
+        const commentsData = commentsRes.data.results || commentsRes.data || []
+        
+        return {
+          totalPosts: postsData.length,
+          publishedPosts: postsData.filter((post: Post) => post.status === 'published').length,
+          totalComments: commentsData.length,
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error)
+        return {
+          totalPosts: 0,
+          publishedPosts: 0,
+          totalComments: 0,
+        }
       }
     },
     enabled: isAuthenticated(),
   })
 
+  if (!isClient) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!isAuthenticated()) {
-    return null
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h1>
+          <p className="text-gray-600">Please log in to access the dashboard.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -173,7 +214,7 @@ export default function DashboardPage() {
                       </span>
                       <span className="flex items-center">
                         <Eye className="w-3 h-3 mr-1" />
-                        {post.view_count} views
+                        {post.view_count || 0} views
                       </span>
                     </div>
                   </div>
