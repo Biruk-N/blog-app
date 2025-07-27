@@ -58,7 +58,21 @@ class CommentViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter queryset based on user permissions"""
-        queryset = Comment.objects.select_related('author', 'post', 'parent').prefetch_related('replies')
+        # Get the post filter from query params
+        post_filter = self.request.query_params.get('post')
+        
+        # Base queryset - only top-level comments (parent is null)
+        queryset = Comment.objects.filter(parent__isnull=True)
+        
+        # Apply post filter if provided
+        if post_filter:
+            queryset = queryset.filter(post_id=post_filter)
+        
+        # Add related fields for performance
+        queryset = queryset.select_related('author', 'post').prefetch_related(
+            'replies__author',
+            'replies__replies__author'
+        )
         
         # If user is not authenticated, only show approved comments
         if not self.request.user.is_authenticated:
@@ -150,5 +164,43 @@ class CommentViewSet(viewsets.ModelViewSet):
     def spam(self, request):
         """Get spam comments (admin only)"""
         comments = self.get_queryset().filter(status='spam')
+        serializer = CommentListSerializer(comments, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def replies(self, request, pk=None):
+        """Get replies for a specific comment"""
+        comment = self.get_object()
+        replies = comment.replies.filter(status='approved').order_by('created_at')
+        serializer = CommentReplySerializer(replies, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def for_post(self, request):
+        """Get comments for a specific post (top-level only with nested replies)"""
+        post_id = request.query_params.get('post_id')
+        if not post_id:
+            return Response(
+                {'error': 'post_id parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get top-level comments for the post
+        comments = Comment.objects.filter(
+            post_id=post_id,
+            parent__isnull=True
+        ).select_related('author', 'post').prefetch_related(
+            'replies__author',
+            'replies__replies__author'
+        )
+        
+        # Apply permission filtering
+        if not request.user.is_authenticated:
+            comments = comments.filter(status='approved')
+        elif not request.user.is_staff:
+            comments = comments.filter(
+                Q(status='approved') | Q(author=request.user)
+            )
+        
         serializer = CommentListSerializer(comments, many=True, context={'request': request})
         return Response(serializer.data)

@@ -14,6 +14,7 @@ class UserMinimalSerializer(serializers.ModelSerializer):
 class CommentReplySerializer(serializers.ModelSerializer):
     """Serializer for comment replies (nested)"""
     author = UserMinimalSerializer(read_only=True)
+    replies = serializers.SerializerMethodField()
     reply_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -21,9 +22,14 @@ class CommentReplySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'content', 'author', 'parent', 'status',
             'created_at', 'updated_at', 'is_edited', 'likes_count',
-            'reply_count'
+            'replies', 'reply_count'
         ]
         read_only_fields = ['author', 'status', 'created_at', 'updated_at', 'likes_count']
+    
+    def get_replies(self, obj):
+        """Get approved replies to this comment"""
+        approved_replies = obj.replies.filter(status='approved').order_by('created_at')
+        return CommentReplySerializer(approved_replies, many=True, context=self.context).data
     
     def get_reply_count(self, obj):
         return obj.replies.filter(status='approved').count()
@@ -31,7 +37,7 @@ class CommentReplySerializer(serializers.ModelSerializer):
 class CommentListSerializer(serializers.ModelSerializer):
     """Serializer for listing comments"""
     author = UserMinimalSerializer(read_only=True)
-    replies = CommentReplySerializer(many=True, read_only=True)
+    replies = serializers.SerializerMethodField()
     reply_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -42,6 +48,11 @@ class CommentListSerializer(serializers.ModelSerializer):
             'replies', 'reply_count'
         ]
         read_only_fields = ['author', 'status', 'created_at', 'updated_at', 'likes_count']
+    
+    def get_replies(self, obj):
+        """Get approved replies to this comment"""
+        approved_replies = obj.replies.filter(status='approved').order_by('created_at')
+        return CommentReplySerializer(approved_replies, many=True, context=self.context).data
     
     def get_reply_count(self, obj):
         return obj.replies.filter(status='approved').count()
@@ -49,7 +60,7 @@ class CommentListSerializer(serializers.ModelSerializer):
 class CommentDetailSerializer(serializers.ModelSerializer):
     """Serializer for detailed comment view"""
     author = UserMinimalSerializer(read_only=True)
-    replies = CommentReplySerializer(many=True, read_only=True)
+    replies = serializers.SerializerMethodField()
     reply_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -60,6 +71,11 @@ class CommentDetailSerializer(serializers.ModelSerializer):
             'replies', 'reply_count'
         ]
         read_only_fields = ['author', 'status', 'created_at', 'updated_at', 'likes_count']
+    
+    def get_replies(self, obj):
+        """Get approved replies to this comment"""
+        approved_replies = obj.replies.filter(status='approved').order_by('created_at')
+        return CommentReplySerializer(approved_replies, many=True, context=self.context).data
     
     def get_reply_count(self, obj):
         return obj.replies.filter(status='approved').count()

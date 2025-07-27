@@ -42,8 +42,8 @@ export default function BlogDetail({ id }: BlogDetailProps) {
   const { data: comments, refetch: refetchComments } = useQuery<Comment[]>({
     queryKey: ['comments', id],
     queryFn: async () => {
-      const response = await api.get(`/comments/?post=${post?.id}`)
-      return response.data.results || response.data
+      const response = await api.get(`/comments/for_post/?post_id=${post?.id}`)
+      return response.data
     },
     enabled: !!post?.id,
   })
