@@ -38,7 +38,7 @@ A modern, Medium-like blog platform frontend built with Next.js 15, TypeScript, 
    
    Update `.env.local` with your API URL:
    ```env
-   NEXT_PUBLIC_API_BASE_URL=https://blog-app-api-jyib.onrender.com/api
+   NEXT_PUBLIC_API_BASE_URL=backend_url
    ```
 
 3. **Run the development server**:
