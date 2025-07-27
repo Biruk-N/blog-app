@@ -38,7 +38,7 @@ A modern, Medium-like blog platform frontend built with Next.js 15, TypeScript, 
    
    Update `.env.local` with your API URL:
    ```env
-   NEXT_PUBLIC_API_BASE_URL=https://blog-app-api-jyib.onrender.com/api
+   NEXT_PUBLIC_API_BASE_URL=backend_url
    ```
 
 3. **Run the development server**:
@@ -106,7 +106,7 @@ The TipTap editor includes:
 1. **Connect your repository** to Vercel
 2. **Set environment variables**:
    ```
-   NEXT_PUBLIC_API_BASE_URL=https://blog-app-api-jyib.onrender.com/api
+   NEXT_PUBLIC_API_BASE_URL=backend_url
    ```
 3. **Deploy**: Automatic deployment on push
 
