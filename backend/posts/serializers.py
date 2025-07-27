@@ -42,22 +42,26 @@ class PostListSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     comment_count = serializers.SerializerMethodField()
     reaction_count = serializers.SerializerMethodField()
+    unique_views_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Post
         fields = [
             'id', 'title', 'slug', 'excerpt', 'author', 'category',
             'tags', 'featured_image', 'status', 'published_at',
-            'created_at', 'view_count', 'is_featured', 'reading_time',
-            'comment_count', 'reaction_count'
+            'created_at', 'view_count', 'unique_views_count', 'is_featured', 
+            'reading_time', 'comment_count', 'reaction_count'
         ]
-        read_only_fields = ['slug', 'created_at', 'published_at', 'view_count']
+        read_only_fields = ['slug', 'created_at', 'published_at', 'view_count', 'unique_views_count']
     
     def get_comment_count(self, obj):
         return obj.comments.count()
     
     def get_reaction_count(self, obj):
         return obj.reactions.count()
+    
+    def get_unique_views_count(self, obj):
+        return obj.get_unique_views_count()
 
 class PostDetailSerializer(serializers.ModelSerializer):
     """Serializer for detailed post view"""
@@ -66,6 +70,9 @@ class PostDetailSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     comment_count = serializers.SerializerMethodField()
     reaction_count = serializers.SerializerMethodField()
+    unique_views_count = serializers.SerializerMethodField()
+    word_count = serializers.SerializerMethodField()
+    character_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Post
@@ -74,11 +81,12 @@ class PostDetailSerializer(serializers.ModelSerializer):
             'category', 'tags', 'featured_image', 'status',
             'meta_title', 'meta_description', 'published_at',
             'scheduled_at', 'created_at', 'updated_at', 'view_count',
-            'is_featured', 'reading_time', 'comment_count', 'reaction_count'
+            'unique_views_count', 'is_featured', 'reading_time', 
+            'word_count', 'character_count', 'comment_count', 'reaction_count'
         ]
         read_only_fields = [
             'slug', 'created_at', 'updated_at', 'published_at',
-            'view_count', 'comment_count', 'reaction_count'
+            'view_count', 'unique_views_count', 'comment_count', 'reaction_count'
         ]
     
     def get_comment_count(self, obj):
@@ -86,6 +94,15 @@ class PostDetailSerializer(serializers.ModelSerializer):
     
     def get_reaction_count(self, obj):
         return obj.reactions.count()
+    
+    def get_unique_views_count(self, obj):
+        return obj.get_unique_views_count()
+    
+    def get_word_count(self, obj):
+        return obj.word_count
+    
+    def get_character_count(self, obj):
+        return obj.character_count
 
 class PostCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating posts"""

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Post, Category, Tag
+from .models import Post, Category, Tag, PostView
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -68,3 +68,34 @@ class PostAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('author', 'category')
+    
+    def unique_views_count(self, obj):
+        return obj.get_unique_views_count()
+    unique_views_count.short_description = 'Unique Views'
+    
+    def reading_time_display(self, obj):
+        return f"{obj.reading_time} min"
+    reading_time_display.short_description = 'Reading Time'
+
+@admin.register(PostView)
+class PostViewAdmin(admin.ModelAdmin):
+    """Admin interface for PostView model"""
+    list_display = ['post', 'user', 'ip_address', 'viewed_at']
+    list_filter = ['viewed_at', 'post__status']
+    search_fields = ['post__title', 'user__username', 'ip_address']
+    date_hierarchy = 'viewed_at'
+    ordering = ['-viewed_at']
+    
+    fieldsets = (
+        ('View Information', {
+            'fields': ('post', 'user', 'session_key', 'ip_address', 'user_agent')
+        }),
+        ('Timing', {
+            'fields': ('viewed_at',)
+        }),
+    )
+    
+    readonly_fields = ['viewed_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('post', 'user')

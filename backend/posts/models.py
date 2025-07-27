@@ -3,7 +3,9 @@ from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 import uuid
+import re
 
 User = get_user_model()
 
@@ -45,6 +47,29 @@ class Tag(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+class PostView(models.Model):
+    """Model for tracking post views with session and user tracking"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='views')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    session_key = models.CharField(max_length=40, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    viewed_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-viewed_at']
+        indexes = [
+            models.Index(fields=['post', 'viewed_at']),
+            models.Index(fields=['user', 'viewed_at']),
+            models.Index(fields=['session_key', 'viewed_at']),
+        ]
+        # Prevent duplicate views from same user/session within 24 hours
+        unique_together = [['post', 'session_key'], ['post', 'user']]
+    
+    def __str__(self):
+        return f"View of {self.post.title} at {self.viewed_at}"
 
 class Post(models.Model):
     """Post model for blog posts"""
@@ -156,6 +181,49 @@ class Post(models.Model):
         self.view_count += 1
         self.save(update_fields=['view_count'])
     
+    def record_view(self, request):
+        """Record a view with session and user tracking"""
+        try:
+            # Get user and session info
+            user = request.user if request.user.is_authenticated else None
+            session_key = request.session.session_key
+            ip_address = self._get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            # Create view record
+            PostView.objects.create(
+                post=self,
+                user=user,
+                session_key=session_key,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            
+            # Increment view count
+            self.increment_view_count()
+            
+        except Exception as e:
+            # Log error but don't break the request
+            print(f"Error recording view: {e}")
+    
+    def _get_client_ip(self, request):
+        """Get client IP address from request"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+    
+    def get_unique_views_count(self):
+        """Get count of unique views (by user or session)"""
+        return self.views.count()
+    
+    def get_recent_views(self, days=7):
+        """Get views from the last N days"""
+        cutoff_date = timezone.now() - timezone.timedelta(days=days)
+        return self.views.filter(viewed_at__gte=cutoff_date)
+    
     @property
     def is_published(self):
         """Check if post is published"""
@@ -163,7 +231,32 @@ class Post(models.Model):
     
     @property
     def reading_time(self):
-        """Estimate reading time in minutes"""
-        words_per_minute = 200
-        word_count = len(self.content.split())
-        return max(1, round(word_count / words_per_minute))
+        """Estimate reading time in minutes with improved calculation"""
+        # Remove HTML tags for better word counting
+        clean_content = re.sub(r'<[^>]+>', '', self.content)
+        # Remove extra whitespace and split into words
+        words = clean_content.strip().split()
+        word_count = len(words)
+        
+        # Average reading speed: 200-250 words per minute
+        # Use 225 as a middle ground
+        words_per_minute = 225
+        
+        # Calculate reading time
+        reading_time = word_count / words_per_minute
+        
+        # Return at least 1 minute, round to nearest minute
+        return max(1, round(reading_time))
+    
+    @property
+    def word_count(self):
+        """Get the word count of the post content"""
+        clean_content = re.sub(r'<[^>]+>', '', self.content)
+        words = clean_content.strip().split()
+        return len(words)
+    
+    @property
+    def character_count(self):
+        """Get the character count of the post content"""
+        clean_content = re.sub(r'<[^>]+>', '', self.content)
+        return len(clean_content)

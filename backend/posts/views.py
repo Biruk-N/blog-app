@@ -89,12 +89,68 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer = PostDetailSerializer(post, context={'request': request})
         return Response(serializer.data)
     
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to automatically record views for published posts"""
+        post = self.get_object()
+        
+        # Record view for published posts
+        if post.is_published:
+            post.record_view(request)
+        
+        return super().retrieve(request, *args, **kwargs)
+    
     @action(detail=True, methods=['post'])
     def increment_view(self, request, pk=None):
-        """Increment view count for a post"""
+        """Increment view count for a post (manual increment)"""
         post = self.get_object()
-        post.increment_view_count()
-        return Response({'message': 'View count incremented'})
+        post.record_view(request)
+        return Response({
+            'message': 'View count incremented',
+            'view_count': post.view_count
+        })
+    
+    @action(detail=True, methods=['get'])
+    def analytics(self, request, pk=None):
+        """Get analytics data for a post"""
+        post = self.get_object()
+        
+        # Check permissions - only author or staff can see analytics
+        if post.author != request.user and not request.user.is_staff:
+            return Response(
+                {'error': 'You can only view analytics for your own posts'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get analytics data
+        total_views = post.view_count
+        unique_views = post.get_unique_views_count()
+        recent_views = post.get_recent_views(days=7).count()
+        
+        # Get views by day for the last 30 days
+        from django.db.models import Count
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        daily_views = post.views.filter(
+            viewed_at__gte=thirty_days_ago
+        ).extra(
+            select={'day': 'date(viewed_at)'}
+        ).values('day').annotate(
+            count=Count('id')
+        ).order_by('day')
+        
+        analytics_data = {
+            'total_views': total_views,
+            'unique_views': unique_views,
+            'recent_views_7_days': recent_views,
+            'reading_time': post.reading_time,
+            'word_count': post.word_count,
+            'character_count': post.character_count,
+            'daily_views': list(daily_views),
+        }
+        
+        return Response(analytics_data)
     
     @action(detail=False, methods=['get'])
     def my_posts(self, request):

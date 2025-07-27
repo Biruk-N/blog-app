@@ -44,8 +44,12 @@ export interface Post {
   author: User;
   category: Category;
   tags: Tag[];
-  read_time: number;
+  read_time?: number; // Legacy field
+  reading_time?: number; // New field
   view_count: number;
+  unique_views_count?: number;
+  word_count?: number;
+  character_count?: number;
   created_at: string;
   updated_at: string;
   published_at?: string;
